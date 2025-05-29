@@ -1,0 +1,27 @@
+name: Send AI Digest
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # 14:00 Uhr MEZ (Sommerzeit)
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 feedparser
+
+      - name: Run script
+        run: python daily_digest.py
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.8166965034:AAGgnh4yPRWjonV7LO1x5mCbqeZdIgjOqHY }}
+          CHAT_ID: ${{ secrets.949311752 }}
