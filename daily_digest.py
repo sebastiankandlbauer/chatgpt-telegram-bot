@@ -9,7 +9,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-# ==== Tool & Prompt Datenbasis (groß & zufällig) ====
+# ==== Tool & Prompt Datenbasis ====
 TOOLS = [
     {"name": "Gamma.app", "desc": "Erstelle schöne, interaktive Präsentationen mit KI."},
     {"name": "Perplexity.ai", "desc": "KI-gestützte Suche mit Quellenangaben."},
@@ -36,13 +36,16 @@ PROMPTS = [
     "Schreibe eine Schritt-für-Schritt-Anleitung zur Automatisierung meines Wochenplans mit AI."
 ]
 
-# ==== AI-News aus 3 Top-Newslettern (Scraping) ====
+# ==== AI-News aus 3 Top-Newslettern (Scraping mit User-Agent) ====
 def get_ai_news():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
     news = []
 
     # Ben's Bites
     try:
-        res = requests.get("https://bensbites.co")
+        res = requests.get("https://bensbites.co", headers=headers)
         soup = BeautifulSoup(res.text, "html.parser")
         articles = soup.find_all("a", class_="no-underline group", limit=2)
         for a in articles:
@@ -50,12 +53,12 @@ def get_ai_news():
             summary = a.find("p").text.strip()
             link = "https://bensbites.co" + a.get("href")
             news.append({"title": title, "summary": summary, "link": link})
-    except:
-        pass
+    except Exception as e:
+        print(f"Ben's Bites failed: {e}")
 
     # The Rundown AI
     try:
-        res = requests.get("https://www.therundown.ai/")
+        res = requests.get("https://www.therundown.ai/", headers=headers)
         soup = BeautifulSoup(res.text, "html.parser")
         items = soup.select("a.text-xl.font-bold", limit=2)
         for a in items:
@@ -63,22 +66,22 @@ def get_ai_news():
             link = a["href"]
             summary = "Neuer Beitrag auf The Rundown AI."
             news.append({"title": title, "summary": summary, "link": link})
-    except:
-        pass
+    except Exception as e:
+        print(f"The Rundown failed: {e}")
 
     # Superhuman
     try:
-        res = requests.get("https://www.superhuman.ai/newsletter")
+        res = requests.get("https://www.superhuman.ai/newsletter", headers=headers)
         soup = BeautifulSoup(res.text, "html.parser")
         block = soup.find("div", class_="max-w-xl").find_all("a", limit=1)
         for a in block:
             title = a.text.strip()
             link = "https://www.superhuman.ai" + a["href"]
             news.append({"title": title, "summary": "Top-News von Superhuman", "link": link})
-    except:
-        pass
+    except Exception as e:
+        print(f"Superhuman failed: {e}")
 
-    return news[:5]  # Top 5 News
+    return news[:5]
 
 # ==== Deep Dive für Sonntag ====
 def get_deep_dive():
@@ -105,11 +108,14 @@ def send_message(msg):
 def main():
     today = datetime.datetime.now().strftime("%A")
 
-    # News
+    # AI-News
     news_items = get_ai_news()
-    news_text = "*📰 Top AI-News des Tages:*\n\n" + "\n\n".join(
-        [f"*{n['title']}*\n{n['summary']}\n[Mehr lesen]({n['link']})" for n in news_items]
-    )
+    if news_items:
+        news_text = "*📰 Top AI-News des Tages:*\n\n" + "\n\n".join(
+            [f"*{n['title']}*\n{n['summary']}\n[Mehr lesen]({n['link']})" for n in news_items]
+        )
+    else:
+        news_text = "⚠️ *Heute konnten keine AI-News geladen werden.*"
 
     # Tool-Tipp
     tool = random.choice(TOOLS)
@@ -131,3 +137,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
